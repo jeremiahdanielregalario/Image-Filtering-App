@@ -86,14 +86,3 @@ rtc_config = {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 - Isaiah John Mariano
 - Meluisa Montealto
 
----
-
-## License
-This project is provided under the MIT License — feel free to reuse and adapt the code for learning and demo purposes.
-
----
-
-If you want, I can also:
-- produce a `requirements.txt` file for you,
-- convert the README to a GitHub-ready format with badges, or
-- create a small deploy guide for hosting on Streamlit Cloud or Heroku.
