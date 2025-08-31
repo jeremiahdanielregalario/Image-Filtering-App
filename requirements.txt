@@ -1,17 +1,8 @@
-# Requirements for ImageFilter Streamlit app
-# Core
 streamlit>=1.22.0
 streamlit-webrtc>=0.55.0
-
-# Image processing and helpers
-opencv-python>=4.6.0
+opencv-python-headless>=4.6.0
 numpy>=1.24.0
 Pillow>=9.4.0
-
-# WebRTC / media dependencies frequently required by streamlit-webrtc
 av>=10.0.0
 aiortc>=1.7.0
 pyee>=8.2.2
-
-# Optional (useful during development)
-python-dotenv>=0.21.0
