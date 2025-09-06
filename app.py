@@ -2,12 +2,17 @@
 
 import streamlit as st
 import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 import cv2
 from PIL import Image
 import io
 import random
 import time
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+
+# Folder Path
+FOLDER_PATH = r"D:\Users\Isaiah\Desktop\Image Filtering Project"
 
 # Helpers
 
@@ -231,11 +236,10 @@ class OpenCVTransformer(VideoTransformerBase):
         self.frame = out.copy()
         return out
 
-# Streamlit App 
+# Streamlit App ##############################################################################################################################
 
 def main():
     st.set_page_config(page_title="Live Image Filters App", layout="wide")
-    st.title("🎥 ImageFilter")
 
     if 'input_mode' not in st.session_state:
         st.session_state['input_mode'] = 'Live'
@@ -249,10 +253,13 @@ def main():
         st.header("Input Mode")
         b1 = st.button("📷 Live Webcam")
         b2 = st.button("🖼️ Upload Image")
+        b3 = st.button("🕹️ Pokémon Filter")
         if b1:
             st.session_state['input_mode'] = 'Live'
         if b2:
             st.session_state['input_mode'] = 'Upload'
+        if b3:
+            st.session_state['input_mode'] = 'Pokemon'
 
 
     # Two cols: left (video/upload preview), right (controls)
@@ -407,9 +414,10 @@ def main():
 
     # Left Col (video or uploader) 
     with left_col:
-        st.header("Output / Video")
 
         if st.session_state['input_mode'] == 'Live':
+            st.title("🎥 ImageFilter")
+            st.header("Output / Video")
             media_constraints = {
                 "video": {
                     "width": {"ideal": req_w},
@@ -464,7 +472,9 @@ def main():
                     else:
                         st.warning("No frame available yet — wait for the video to initialize.")
 
-        else:
+        elif st.session_state['input_mode'] == 'Upload':
+            st.title("🎥 ImageFilter")
+            st.header("Output / Video")
             uploaded = st.file_uploader("Upload an image (png/jpg)", type=["png", "jpg", "jpeg"]) 
 
             if uploaded is not None:
@@ -509,15 +519,299 @@ def main():
                     processed = apply_emboss(processed)
 
                 st.subheader("Original")
-                st.image(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB), use_container_width=True)
+                st.image(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB), width=600)
                 st.subheader("Processed")
-                st.image(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB), use_container_width=True)
+                st.image(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB), width=600)
                 data = to_bytes_from_bgr(processed)
                 st.download_button("Download processed image", data=data, file_name="processed.png", mime="image/png")
 
+##############################################################################################################################################    
+        elif st.session_state['input_mode'] == 'Pokemon':
+            #Load data
+            df = pd.read_csv(fr"{FOLDER_PATH}\pokemon.csv")
+
+            #Pokemon list
+            pokemons = ['Pikachu', 'Venusaur', 'Charizard', 'Blastoise']
+
+            #Header
+            col1, col2, col3 = st.columns([0.4, 1, 0.4])
+            with col2:
+                st.title("Pokémon Filtered")
+            with col3:
+                #pokeball icon
+                st.image(fr"{FOLDER_PATH}\pokeball.png", width=80)
+
+            #Choose your pokemon
+            pokemon = st.sidebar.selectbox("Choose your Pokemon", pokemons)
+
+            
+            #Image
+            image = Image.open(fr'{FOLDER_PATH}\{pokemon}.png')
+            img_cv = pil_to_cv2(image)
+
+            #apply filters/transformations
+            processed = img_cv.copy()
+            processed = transform_rotate(processed, rotate_angle)
+            processed = transform_scale(processed, scale_val)
+
+            if selected_filter == "Grayscale":
+                processed = apply_grayscale(processed)
+            elif selected_filter == "Sepia":
+                processed = apply_sepia(processed, intensity=sepia_int)
+            elif selected_filter == "Pencil Sketch":
+                processed = apply_pencil_sketch(processed, sigma=pencil_sigma)
+            elif selected_filter == "Cartoonify":
+                processed = apply_cartoonify(processed, num_bilateral=bilateral_count)
+            elif selected_filter == "Canny Edges":
+                processed = apply_canny(processed, threshold1=t1, threshold2=t2)
+            elif selected_filter == "Gaussian Blur":
+                processed = apply_blur(processed, ksize=blur_k)
+            elif selected_filter == "Posterize":
+                processed = apply_posterize(processed, levels=posterize_level)
+            elif selected_filter == "Negative":
+                processed = apply_negative(processed)
+            elif selected_filter == "Emboss":
+                processed = apply_emboss(processed)
+
+            col1, col2, col3 = st.columns([0.4, 1, 0.4])
+
+            with col2:
+                st.image(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB), width=300)
+                if selected_filter == "None" and rotate_angle == 0 and scale_val == 1:
+                    st.subheader(f"{pokemon}")
+                elif selected_filter == "None" and not (rotate_angle == 0 and scale_val == 1):
+                    st.subheader(f"R{rotate_angle}S{scale_val} {pokemon}")
+                else:
+                    st.subheader(f"R{rotate_angle}S{scale_val} {selected_filter} {pokemon}")
+
+            # Pokeomon Stats
+            def plot_pokemon_stats(df, pokemon_name, filter_name="None", rotate=0, scale=1.0):
+                stats_cols = ["HP", "Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]
+                pokemon_row = df[df["Name"] == pokemon_name].iloc[0]
+
+                # --- Base stats dictionary
+                base_stats = {stat: int(pokemon_row[stat]) for stat in stats_cols}
+
+                # --- Apply deterministic rotation FIRST
+                if rotate != 0:
+                    k = rotate % len(stats_cols)
+                    rotated_values = [base_stats[stat] for stat in stats_cols]
+                    rotated_values = rotated_values[-k:] + rotated_values[:-k]  # shift right by k
+                    s = {stat: rotated_values[i] for i, stat in enumerate(stats_cols)}
+                else:
+                    s = base_stats.copy()
+
+                # --- Apply filter modifications AFTER rotation
+                if filter_name == "Grayscale":
+                    s["HP"] += 20
+                    s["Defense"] += 20
+                    s["Attack"] -= 20
+                    s["Sp. Atk"] -= 20
+
+                elif filter_name == "Sepia":
+                    s["HP"] -= 20
+                    s["Defense"] -= 20
+                    s["Attack"] += 20
+                    s["Sp. Atk"] += 20
+
+                elif filter_name == "Pencil Sketch":
+                    s["Attack"], s["Sp. Atk"] = s["Sp. Atk"], s["Attack"]
+                    s["HP"] -= 10
+                    s["Defense"] += 10
+
+                elif filter_name == "Cartoonify":
+                    s["HP"], s["Defense"] = s["Defense"], s["HP"]
+                    s["Attack"] -= 10
+                    s["Sp. Atk"] += 10
+
+                elif filter_name == "Canny Edges":
+                    s["Sp. Def"] += 20
+                    s["Defense"] += 20
+                    s["Attack"] -= 20
+                    s["Sp. Atk"] -= 20
+
+                elif filter_name == "Gaussian Blur":
+                    s["Sp. Def"] -= 20
+                    s["Defense"] -= 20
+                    s["Attack"] += 20
+                    s["Sp. Atk"] += 20
+
+                elif filter_name == "Emboss":
+                    s["Attack"], s["Defense"] = s["Defense"], s["Attack"]
+                    s["Sp. Atk"] -= 10
+                    s["Sp. Def"] -= 10
+
+                elif filter_name == "Posterize":
+                    s["Sp. Atk"], s["Sp. Def"] = s["Sp. Def"], s["Sp. Atk"]
+                    s["Attack"] -= 10
+                    s["Defense"] -= 10
+
+                elif filter_name == "Negative":
+                    s["HP"], s["Sp. Def"] = s["Sp. Def"], s["HP"]
+                    s["Defense"] -= 10
+                    s["Attack"] += 10
+
+                # --- Apply scaling: multiply Speed
+                s["Speed"] = int(s["Speed"] * scale)
+
+                # --- Extract values for plotting
+                values = [s[stat] for stat in stats_cols]
+                total = sum(values)
+                
+
+                colors = ["#FFD34E"] * 6  # yellow
+                colors[3] = "#8BC34A"     # Sp. Atk green
+                colors[4] = "#8BC34A"     # Sp. Def green
+
+                fig = go.Figure()
+
+                for i, stat in enumerate(stats_cols):
+                    fig.add_trace(go.Bar(
+                        x=[values[i]],
+                        y=[stat],
+                        orientation="h",
+                        marker=dict(color=colors[i]),
+                        width=0.6,
+                        name=stat,
+                        text=[str(values[i])],
+                        textposition="inside",
+                        insidetextanchor="start"
+                    ))
+
+                # --- Layout with black background & white text
+                fig.update_layout(
+                    title=f"{pokemon_name} Base Stats (Total: {total})",
+                    xaxis=dict(showgrid=False, showticklabels=False, zeroline=False, range=[0, 400]),
+                    yaxis=dict(categoryorder="array", categoryarray=stats_cols[::-1]),
+                    barmode="stack",
+                    height=400,
+                    margin=dict(l=80, r=80, t=50, b=30),
+                    plot_bgcolor="black",
+                    paper_bgcolor="black",
+                    font=dict(color="white")
+                )
+                s["Name"] = pokemon_name
+
+                return fig, s
+            st.subheader("Base Stats")
+            fig, modified_stats = plot_pokemon_stats(df, pokemon, filter_name=selected_filter, rotate=rotate_angle, scale=scale_val)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Battle
+            col1, col2, col3 = st.columns([1, 1,1])
+            with col2:
+                st.title("⚔️ Pokémon Battle")
+
+            # Define moves (simplified strongest moves)
+            pokemon_moves = {
+                "Pikachu": {"Thunderbolt": {"power": 90, "type": "Special"}},
+                "Charizard": {"Flamethrower": {"power": 90, "type": "Special"}},
+                "Blastoise": {"Hydro Pump": {"power": 110, "type": "Special"}},
+                "Venusaur": {"Solar Beam": {"power": 120, "type": "Special"}}
+            }
+
+            # Simple damage calculation
+            def calculate_damage(attacker, defender, move_name, move):
+                if move["type"] == "Special":
+                    atk = attacker["Sp. Atk"]
+                    defense = defender["Sp. Def"]
+                else:
+                    atk = attacker["Attack"]
+                    defense = defender["Defense"]
+
+                # Basic Pokémon-style formula (simplified)
+                base_damage = (((2 * 50 / 5 + 2) * move["power"] * atk / defense) / 50) + 2
+                # Add randomness (±15%)
+                damage = base_damage * random.uniform(0.85, 1.0)
+                return int(max(1, damage))
+
+            # Convert stats row to dict
+            def pokemon_from_df(df, name, stats_dict=None):
+                stats_cols = ["HP", "Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]
+                row = df[df["Name"] == name].iloc[0]
+                if stats_dict:  # use filtered/modified stats
+                    stats = stats_dict
+                else:
+                    stats = {stat: int(row[stat]) for stat in stats_cols}
+                stats["Name"] = name
+                return stats
+
+            # Battle system
+            def battle(df, my_pokemon_stats, opponent_name):
+
+                # Setup Pokémon
+                my_pokemon = my_pokemon_stats
+                opponent = pokemon_from_df(df, opponent_name)
+
+                # Initialize battle state
+                if "battle_state" not in st.session_state or st.button("Restart Battle"):
+                    st.session_state.battle_state = {
+                        "my_hp": my_pokemon["HP"],
+                        "opp_hp": opponent["HP"],
+                        "log": [],
+                        "winner": None
+                    }
+
+                battle = st.session_state.battle_state
+
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    # Show HP bars
+                    st.image(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB), width=300)
+                    st.write(f"**{my_pokemon['Name']} HP:** {battle['my_hp']} / {my_pokemon['HP']}")
+                    st.progress(min(1.0, battle['my_hp'] / my_pokemon["HP"]))
+                with col2:
+                    st.image(Image.open(fr'{FOLDER_PATH}\{opponent_name}.png'), width=300)
+                    st.write(f"**{opponent['Name']} HP:** {battle['opp_hp']} / {opponent['HP']}")
+                    st.progress(min(1.0, battle['opp_hp'] / opponent["HP"]))
+
+                # Check for winner
+                if battle["winner"]:
+                    st.success(f"🎉 {battle['winner']} wins!")
+                    return
+
+                # Player turn (full round happens here)
+                st.write("Your turn! Choose a move:")
+                moves = list(pokemon_moves[my_pokemon["Name"]].keys())
+                for move in moves:
+                    if st.button(move):
+                        # Player attacks
+                        damage = calculate_damage(my_pokemon, opponent, move, pokemon_moves[my_pokemon["Name"]][move])
+                        battle["opp_hp"] = max(0, battle["opp_hp"] - damage)
+                        battle["log"].append(f"{my_pokemon['Name']} used {move}! It dealt {damage} damage.")
+
+                        # Check if opponent fainted
+                        if battle["opp_hp"] <= 0:
+                            battle["winner"] = my_pokemon["Name"]
+                            break
+
+                        # Opponent counterattacks immediately
+                        opp_move = list(pokemon_moves[opponent["Name"]].keys())[0]
+                        damage = calculate_damage(opponent, my_pokemon, opp_move, pokemon_moves[opponent["Name"]][opp_move])
+                        battle["my_hp"] = max(0, battle["my_hp"] - damage)
+                        battle["log"].append(f"{opponent['Name']} used {opp_move}! It dealt {damage} damage.")
+
+                        # Check if player fainted
+                        if battle["my_hp"] <= 0:
+                            battle["winner"] = opponent["Name"]
+
+                        # Force Streamlit to update immediately
+                        st.experimental_rerun()
+
+                # Show battle log
+                st.write("### Battle Log")
+                for entry in battle["log"]:
+                    st.write(entry)
+            
+            opponent = st.selectbox("Choose your opponent:", ["Charizard", "Blastoise", "Venusaur", "Pikachu"])
+            battle(df, modified_stats, opponent)
+
+
+
+
+
     st.markdown("---")
     st.markdown("**Project by:** Jeremiah Daniel Regalario, Isaiah John Mariano, Meluisa Montealto")
-
 
 if __name__ == '__main__':
     main()
