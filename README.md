@@ -30,6 +30,11 @@ You can install them with pip:
 pip install streamlit streamlit-webrtc opencv-python numpy Pillow
 ```
 
+- Replace `FOLDER_PATH` in `app.py` by the folder location.
+```bash
+FOLDER_PATH = r"D:\Users\Isaiah\Desktop\Image Filtering Project"
+```
+
 > Note: On some systems `opencv-python` might require additional OS-level dependencies. See OpenCV or your OS package manager docs if you hit installation issues.
 
 ---
