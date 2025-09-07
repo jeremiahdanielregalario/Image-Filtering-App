@@ -649,7 +649,7 @@ def main():
                     s["Attack"] += 10
 
                 # --- Apply scaling: multiply Speed
-                s["Speed"] = int(s["Speed"] * scale)
+                s["Speed"] = int(s["Speed"] * 1/(scale))
 
                 # --- Extract values for plotting
                 values = [s[stat] for stat in stats_cols]
@@ -697,19 +697,39 @@ def main():
             # Battle
             col1, col2, col3 = st.columns([1, 1,1])
             with col2:
-                st.title("⚔️ Pokémon Battle")
+                st.header("⚔️ Pokémon Battle")
 
             # Define moves (simplified strongest moves)
             pokemon_moves = {
-                "Pikachu": {"Thunderbolt": {"power": 90, "type": "Special"}},
-                "Charizard": {"Flamethrower": {"power": 90, "type": "Special"}},
-                "Blastoise": {"Hydro Pump": {"power": 110, "type": "Special"}},
-                "Venusaur": {"Solar Beam": {"power": 120, "type": "Special"}}
+                "Pikachu": {
+                    "Thunderbolt": {"power": 90, "atk_type": "Special", "type" : "Lightning"},
+                    "Iron Tail": {"power": 100, "atk_type": "Attack", "type" : "Steel"},
+                    "Thunder": {"power": 110, "atk_type": "Special", "type" : "Lightning"},
+                    "Body Slam": {"power": 85, "atk_type": "Attack", "type" : "Normal"}
+                    },
+                "Charizard": {
+                    "Flamethrower": {"power": 90, "atk_type": "Special", "type" : "Fire"},
+                    "Slash": {"power": 75, "atk_type": "Attack", "type" : "Normal"},
+                    "Dragon Claw": {"power": 80, "atk_type": "Attack", "type" : "Dragon"},
+                    "Air Slash": {"power": 75, "atk_type": "Attack", "type" : "Flying"}
+                    },
+                "Blastoise": {
+                    "Hydro Pump": {"power": 110, "atk_type": "Special", "type" : "Water"},
+                    "Bite" : {"power": 60, "atk_type": "Attack", "type" : "Dark"},
+                    "Brick Break" : {"power": 75, "atk_type": "Attack", "type" : "Fighting"},
+                    "Ice Punch" : {"power": 75, "atk_type": "Attack", "type" : "Ice"},
+                    },
+                "Venusaur": {
+                    "Solar Beam": {"power": 120, "atk_type": "Special", "type":"Grass"},
+                    "Take Down": {"power": 90, "atk_type": "Attack", "type" : "Normal"},
+                    "Poison Jab": {"power": 80, "atk_type": "Attack", "type" : "Poison"},
+                    "Earth Power" : {"power": 90, "atk_type": "Special", "type" : "Ground"},
+                    }
             }
 
             # Simple damage calculation
             def calculate_damage(attacker, defender, move_name, move):
-                if move["type"] == "Special":
+                if move["atk_type"] == "Special":
                     atk = attacker["Sp. Atk"]
                     defense = defender["Sp. Def"]
                 else:
@@ -717,7 +737,7 @@ def main():
                     defense = defender["Defense"]
 
                 # Basic Pokémon-style formula (simplified)
-                base_damage = (((2 * 50 / 5 + 2) * move["power"] * atk / defense) / 50) + 2
+                base_damage = ((((2 * 50 / 5) + 2) * move["power"] * atk / defense) / 50) + 2
                 # Add randomness (±15%)
                 damage = base_damage * random.uniform(0.85, 1.0)
                 return int(max(1, damage))
@@ -743,8 +763,8 @@ def main():
                 # Initialize battle state
                 if "battle_state" not in st.session_state or st.button("Restart Battle"):
                     st.session_state.battle_state = {
-                        "my_hp": my_pokemon["HP"],
-                        "opp_hp": opponent["HP"],
+                        "my_hp": my_pokemon["HP"] * 3,
+                        "opp_hp": opponent["HP"] * 3,
                         "log": [],
                         "winner": None
                     }
@@ -755,12 +775,12 @@ def main():
                 with col1:
                     # Show HP bars
                     st.image(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB), width=300)
-                    st.write(f"**{my_pokemon['Name']} HP:** {battle['my_hp']} / {my_pokemon['HP']}")
-                    st.progress(min(1.0, battle['my_hp'] / my_pokemon["HP"]))
+                    st.write(f"**{my_pokemon['Name']} HP:** {battle['my_hp']} / {my_pokemon['HP'] * 3}")
+                    st.progress(min(1.0, battle['my_hp'] / (my_pokemon["HP"] * 3)))
                 with col2:
                     st.image(Image.open(fr'images/{opponent_name}.png'), width=300)
-                    st.write(f"**{opponent['Name']} HP:** {battle['opp_hp']} / {opponent['HP']}")
-                    st.progress(min(1.0, battle['opp_hp'] / opponent["HP"]))
+                    st.write(f"**{opponent['Name']} HP:** {battle['opp_hp']} / {opponent['HP'] * 3}")
+                    st.progress(min(1.0, (battle['opp_hp'])/ (opponent["HP"] * 3)))
 
                 # Check for winner
                 if battle["winner"]:
@@ -772,25 +792,52 @@ def main():
                 moves = list(pokemon_moves[my_pokemon["Name"]].keys())
                 for move in moves:
                     if st.button(move):
-                        # Player attacks
-                        damage = calculate_damage(my_pokemon, opponent, move, pokemon_moves[my_pokemon["Name"]][move])
-                        battle["opp_hp"] = max(0, battle["opp_hp"] - damage)
-                        battle["log"].append(f"{my_pokemon['Name']} used {move}! It dealt {damage} damage.")
+                        # Determine turn order using Speed
+                        if my_pokemon["Speed"] > opponent["Speed"]:
+                            first, second = "player", "opponent"
+                        elif my_pokemon["Speed"] < opponent["Speed"]:
+                            first, second = "opponent", "player"
+                        else:
+                            first = random.choice(["player", "opponent"])
+                            second = "player" if first == "opponent" else "opponent"
 
-                        # Check if opponent fainted
-                        if battle["opp_hp"] <= 0:
-                            battle["winner"] = my_pokemon["Name"]
-                            break
+                        # Execute first attacker
+                        if first == "player":
+                            # Player attacks
+                            damage = calculate_damage(my_pokemon, opponent, move, pokemon_moves[my_pokemon["Name"]][move])
+                            battle["opp_hp"] = max(0, battle["opp_hp"] - damage)
+                            battle["log"].append(f"{my_pokemon['Name']} used {move}! It dealt {damage} damage.")
 
-                        # Opponent counterattacks immediately
-                        opp_move = list(pokemon_moves[opponent["Name"]].keys())[0]
-                        damage = calculate_damage(opponent, my_pokemon, opp_move, pokemon_moves[opponent["Name"]][opp_move])
-                        battle["my_hp"] = max(0, battle["my_hp"] - damage)
-                        battle["log"].append(f"{opponent['Name']} used {opp_move}! It dealt {damage} damage.")
+                            if battle["opp_hp"] <= 0:
+                                battle["winner"] = my_pokemon["Name"]
+                                st.rerun()
 
-                        # Check if player fainted
-                        if battle["my_hp"] <= 0:
-                            battle["winner"] = opponent["Name"]
+                        else:
+                            # Opponent attacks first
+                            opp_move = random.choice(list(pokemon_moves[opponent["Name"]].keys())) # random choice
+                            damage = calculate_damage(opponent, my_pokemon, opp_move, pokemon_moves[opponent["Name"]][opp_move])
+                            battle["my_hp"] = max(0, battle["my_hp"] - damage)
+                            battle["log"].append(f"{opponent['Name']} used {opp_move}! It dealt {damage} damage.")
+
+                            if battle["my_hp"] <= 0:
+                                battle["winner"] = opponent["Name"]
+                                st.rerun()
+
+                        # Execute second attacker (if no winner yet)
+                        if not battle["winner"]:
+                            if second == "player":
+                                damage = calculate_damage(my_pokemon, opponent, move, pokemon_moves[my_pokemon["Name"]][move])
+                                battle["opp_hp"] = max(0, battle["opp_hp"] - damage)
+                                battle["log"].append(f"{my_pokemon['Name']} used {move}! It dealt {damage} damage.")
+                                if battle["opp_hp"] <= 0:
+                                    battle["winner"] = my_pokemon["Name"]
+                            else:
+                                opp_move = random.choice(list(pokemon_moves[opponent["Name"]].keys()))
+                                damage = calculate_damage(opponent, my_pokemon, opp_move, pokemon_moves[opponent["Name"]][opp_move])
+                                battle["my_hp"] = max(0, battle["my_hp"] - damage)
+                                battle["log"].append(f"{opponent['Name']} used {opp_move}! It dealt {damage} damage.")
+                                if battle["my_hp"] <= 0:
+                                    battle["winner"] = opponent["Name"]
 
                         # Force Streamlit to update immediately
                         st.rerun()
@@ -802,10 +849,6 @@ def main():
             
             opponent = st.selectbox("Choose your opponent:", ["Charizard", "Blastoise", "Venusaur", "Pikachu"])
             battle(df, modified_stats, opponent)
-
-
-
-
 
     st.markdown("---")
     st.markdown("**Project by:** Jeremiah Daniel Regalario, Isaiah John Mariano, Meluisa Montealto")
