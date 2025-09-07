@@ -23,16 +23,12 @@ A Streamlit app that applies real-time image filters to webcam input (via WebRTC
   - `opencv-python`
   - `numpy`
   - `Pillow`
+  - `plotly`
 
 You can install them with pip:
 
 ```bash
-pip install streamlit streamlit-webrtc opencv-python numpy Pillow
-```
-
-- Replace `FOLDER_PATH` in `app.py` by the folder location.
-```bash
-FOLDER_PATH = r"D:\Users\Isaiah\Desktop\Image Filtering Project"
+pip install streamlit streamlit-webrtc opencv-python numpy Pillow plotly
 ```
 
 > Note: On some systems `opencv-python` might require additional OS-level dependencies. See OpenCV or your OS package manager docs if you hit installation issues.
