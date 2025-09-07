@@ -536,14 +536,14 @@ def main():
                 st.title("Pokémon Filtered")
             with col3:
                 #pokeball icon
-                st.image(fr"pokeball.png", width=80)
+                st.image(fr"images/pokeball.png", width=80)
 
             #Choose your pokemon
             pokemon = st.sidebar.selectbox("Choose your Pokemon", pokemons)
 
             
             #Image
-            image = Image.open(fr'{pokemon}.png')
+            image = Image.open(fr'images/{pokemon}.png')
             img_cv = pil_to_cv2(image)
 
             #apply filters/transformations
@@ -758,7 +758,7 @@ def main():
                     st.write(f"**{my_pokemon['Name']} HP:** {battle['my_hp']} / {my_pokemon['HP']}")
                     st.progress(min(1.0, battle['my_hp'] / my_pokemon["HP"]))
                 with col2:
-                    st.image(Image.open(fr'{opponent_name}.png'), width=300)
+                    st.image(Image.open(fr'images/{opponent_name}.png'), width=300)
                     st.write(f"**{opponent['Name']} HP:** {battle['opp_hp']} / {opponent['HP']}")
                     st.progress(min(1.0, battle['opp_hp'] / opponent["HP"]))
 
