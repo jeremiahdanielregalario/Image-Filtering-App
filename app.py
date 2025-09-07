@@ -582,6 +582,7 @@ def main():
                     st.subheader(f"R{rotate_angle}S{scale_val} {selected_filter} {pokemon}")
 
             # Pokeomon Stats
+
             def plot_pokemon_stats(df, pokemon_name, filter_name="None", rotate=0, scale=1.0):
                 stats_cols = ["HP", "Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]
                 pokemon_row = df[df["Name"] == pokemon_name].iloc[0]
@@ -699,6 +700,39 @@ def main():
             with col2:
                 st.header("⚔️ Pokémon Battle")
 
+            # Type effectiveness chart
+            type_chart = {
+                "bug":     {"strong": ["grass", "dark", "psychic"], "weak": ["fire", "flying", "rock"]},
+                "dark":    {"strong": ["ghost", "psychic"], "weak": ["bug", "fairy", "fighting"]},
+                "dragon":  {"strong": ["dragon"], "weak": ["dragon", "fairy", "ice"]},
+                "electric":{"strong": ["flying", "water"], "weak": ["ground"]},
+                "fairy":   {"strong": ["fighting", "dark", "dragon"], "weak": ["poison", "steel"]},
+                "fighting":{"strong": ["dark", "ice", "normal", "rock", "steel"], "weak": ["fairy", "flying", "psychic"]},
+                "fire":    {"strong": ["bug", "grass", "ice", "steel"], "weak": ["ground", "rock", "water"]},
+                "flying":  {"strong": ["bug", "fighting", "grass"], "weak": ["electric", "ice", "rock"]},
+                "ghost":   {"strong": ["ghost", "psychic"], "weak": ["dark", "ghost"]},
+                "grass":   {"strong": ["ground", "rock", "water"], "weak": ["bug", "fire", "flying", "ice", "poison"]},
+                "ground":  {"strong": ["electric", "fire", "poison", "rock", "steel"], "weak": ["grass", "ice", "water"]},
+                "ice":     {"strong": ["dragon", "flying", "grass", "ground"], "weak": ["fighting", "fire", "rock", "steel"]},
+                "normal":  {"strong": [], "weak": ["fighting"]},
+                "poison":  {"strong": ["fairy", "grass"], "weak": ["ground", "psychic"]},
+                "psychic": {"strong": ["fighting", "poison"], "weak": ["bug", "dark", "ghost"]},
+                "rock":    {"strong": ["bug", "fire", "flying", "ice"], "weak": ["fighting", "grass", "ground", "steel", "water"]},
+                "steel":   {"strong": ["fairy", "ice", "rock"], "weak": ["fighting", "fire", "ground"]},
+                "water":   {"strong": ["fire", "ground", "rock"], "weak": ["electric", "grass"]}
+            }
+
+            def calculate_multiplier(move_type, target_type):
+                move_type = move_type.lower()
+                target_type = target_type.lower()
+
+                if target_type in type_chart[move_type]["strong"]:
+                    return 1.5
+                elif target_type in type_chart[move_type]["weak"]:
+                    return 0.5
+                else:
+                    return 1.0
+
             # Define moves (simplified strongest moves)
             pokemon_moves = {
                 "Pikachu": {
@@ -740,7 +774,14 @@ def main():
                 base_damage = ((((2 * 50 / 5) + 2) * move["power"] * atk / defense) / 50) + 2
                 # Add randomness (±15%)
                 damage = base_damage * random.uniform(0.85, 1.0)
-                return int(max(1, damage))
+                # Type effectiveness 
+                multiplier = 1.0
+                move_type = move["type"].lower()
+                for target_type in defender["Type"]:  # works for dual-types
+                    multiplier *= calculate_multiplier(move_type, target_type)
+
+                # Final damage (at least 1)
+                return int(max(1, damage * multiplier))
 
             # Convert stats row to dict
             def pokemon_from_df(df, name, stats_dict=None):
