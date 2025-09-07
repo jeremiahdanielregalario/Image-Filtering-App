@@ -526,6 +526,10 @@ def main():
         elif st.session_state['input_mode'] == 'Pokemon':
             #Load data
             df = pd.read_csv(fr"pokemon.csv")
+            # Ensure Type1/Type2 columns are combined into a single "Type" (list)
+            df["Type"] = df[["Type 1", "Type 2"]].apply(
+                lambda x: [t for t in x if pd.notna(t)], axis=1
+            )
 
             #Pokemon list
             pokemons = ['Pikachu', 'Venusaur', 'Charizard', 'Blastoise']
@@ -582,6 +586,7 @@ def main():
                     st.subheader(f"R{rotate_angle}S{scale_val} {selected_filter} {pokemon}")
 
             # Pokeomon Stats
+
             def plot_pokemon_stats(df, pokemon_name, filter_name="None", rotate=0, scale=1.0):
                 stats_cols = ["HP", "Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]
                 pokemon_row = df[df["Name"] == pokemon_name].iloc[0]
@@ -688,6 +693,7 @@ def main():
                     font=dict(color="white")
                 )
                 s["Name"] = pokemon_name
+                s["Type"] = pokemon_row["Type"]
 
                 return fig, s
             st.subheader("Base Stats")
@@ -699,32 +705,65 @@ def main():
             with col2:
                 st.header("⚔️ Pokémon Battle")
 
+            # Type effectiveness chart
+            type_chart = {
+                "bug":     {"strong": ["grass", "dark", "psychic"], "weak": ["fire", "flying", "rock"]},
+                "dark":    {"strong": ["ghost", "psychic"], "weak": ["bug", "fairy", "fighting"]},
+                "dragon":  {"strong": ["dragon"], "weak": ["dragon", "fairy", "ice"]},
+                "electric":{"strong": ["flying", "water"], "weak": ["ground"]},
+                "fairy":   {"strong": ["fighting", "dark", "dragon"], "weak": ["poison", "steel"]},
+                "fighting":{"strong": ["dark", "ice", "normal", "rock", "steel"], "weak": ["fairy", "flying", "psychic"]},
+                "fire":    {"strong": ["bug", "grass", "ice", "steel"], "weak": ["ground", "rock", "water"]},
+                "flying":  {"strong": ["bug", "fighting", "grass"], "weak": ["electric", "ice", "rock"]},
+                "ghost":   {"strong": ["ghost", "psychic"], "weak": ["dark", "ghost"]},
+                "grass":   {"strong": ["ground", "rock", "water"], "weak": ["bug", "fire", "flying", "ice", "poison"]},
+                "ground":  {"strong": ["electric", "fire", "poison", "rock", "steel"], "weak": ["grass", "ice", "water"]},
+                "ice":     {"strong": ["dragon", "flying", "grass", "ground"], "weak": ["fighting", "fire", "rock", "steel"]},
+                "normal":  {"strong": [], "weak": ["fighting"]},
+                "poison":  {"strong": ["fairy", "grass"], "weak": ["ground", "psychic"]},
+                "psychic": {"strong": ["fighting", "poison"], "weak": ["bug", "dark", "ghost"]},
+                "rock":    {"strong": ["bug", "fire", "flying", "ice"], "weak": ["fighting", "grass", "ground", "steel", "water"]},
+                "steel":   {"strong": ["fairy", "ice", "rock"], "weak": ["fighting", "fire", "ground"]},
+                "water":   {"strong": ["fire", "ground", "rock"], "weak": ["electric", "grass"]}
+            }
+
+            def calculate_multiplier(move_type, target_type):
+                move_type = move_type.lower()
+                target_type = target_type.lower()
+
+                if target_type in type_chart[move_type]["strong"]:
+                    return 1.5
+                elif target_type in type_chart[move_type]["weak"]:
+                    return 0.5
+                else:
+                    return 1.0
+
             # Define moves (simplified strongest moves)
             pokemon_moves = {
                 "Pikachu": {
-                    "Thunderbolt": {"power": 90, "atk_type": "Special", "type" : "Lightning"},
-                    "Iron Tail": {"power": 100, "atk_type": "Attack", "type" : "Steel"},
-                    "Thunder": {"power": 110, "atk_type": "Special", "type" : "Lightning"},
-                    "Body Slam": {"power": 85, "atk_type": "Attack", "type" : "Normal"}
-                    },
+                    "Thunderbolt": {"power": 90, "atk_type": "Special", "type": "electric"},
+                    "Iron Tail": {"power": 100, "atk_type": "Attack", "type": "steel"},
+                    "Thunder": {"power": 110, "atk_type": "Special", "type": "electric"},
+                    "Body Slam": {"power": 85, "atk_type": "Attack", "type": "normal"}
+                },
                 "Charizard": {
-                    "Flamethrower": {"power": 90, "atk_type": "Special", "type" : "Fire"},
-                    "Slash": {"power": 75, "atk_type": "Attack", "type" : "Normal"},
-                    "Dragon Claw": {"power": 80, "atk_type": "Attack", "type" : "Dragon"},
-                    "Air Slash": {"power": 75, "atk_type": "Attack", "type" : "Flying"}
-                    },
+                    "Flamethrower": {"power": 90, "atk_type": "Special", "type": "fire"},
+                    "Slash": {"power": 75, "atk_type": "Attack", "type": "normal"},
+                    "Dragon Claw": {"power": 80, "atk_type": "Attack", "type": "dragon"},
+                    "Air Slash": {"power": 75, "atk_type": "Attack", "type": "flying"}
+                },
                 "Blastoise": {
-                    "Hydro Pump": {"power": 110, "atk_type": "Special", "type" : "Water"},
-                    "Bite" : {"power": 60, "atk_type": "Attack", "type" : "Dark"},
-                    "Brick Break" : {"power": 75, "atk_type": "Attack", "type" : "Fighting"},
-                    "Ice Punch" : {"power": 75, "atk_type": "Attack", "type" : "Ice"},
-                    },
+                    "Hydro Pump": {"power": 110, "atk_type": "Special", "type": "water"},
+                    "Bite": {"power": 60, "atk_type": "Attack", "type": "dark"},
+                    "Brick Break": {"power": 75, "atk_type": "Attack", "type": "fighting"},
+                    "Ice Punch": {"power": 75, "atk_type": "Attack", "type": "ice"}
+                },
                 "Venusaur": {
-                    "Solar Beam": {"power": 120, "atk_type": "Special", "type":"Grass"},
-                    "Take Down": {"power": 90, "atk_type": "Attack", "type" : "Normal"},
-                    "Poison Jab": {"power": 80, "atk_type": "Attack", "type" : "Poison"},
-                    "Earth Power" : {"power": 90, "atk_type": "Special", "type" : "Ground"},
-                    }
+                    "Solar Beam": {"power": 120, "atk_type": "Special", "type": "grass"},
+                    "Take Down": {"power": 90, "atk_type": "Attack", "type": "normal"},
+                    "Poison Jab": {"power": 80, "atk_type": "Attack", "type": "poison"},
+                    "Earth Power": {"power": 90, "atk_type": "Special", "type": "ground"}
+                }
             }
 
             # Simple damage calculation
@@ -740,17 +779,32 @@ def main():
                 base_damage = ((((2 * 50 / 5) + 2) * move["power"] * atk / defense) / 50) + 2
                 # Add randomness (±15%)
                 damage = base_damage * random.uniform(0.85, 1.0)
-                return int(max(1, damage))
+
+                # Ensure defender["Type"] is always a list
+                defender_types = defender["Type"]
+                if isinstance(defender_types, str):
+                    defender_types = [defender_types]
+                # Type effectiveness 
+                multiplier = 1.0
+                move_type = move["type"].lower()
+                for target_type in defender["Type"]:  # works for dual-types
+                    multiplier *= calculate_multiplier(move_type, target_type)
+
+                # Final damage (at least 1)
+                return int(max(1, damage * multiplier))
 
             # Convert stats row to dict
             def pokemon_from_df(df, name, stats_dict=None):
                 stats_cols = ["HP", "Attack", "Defense", "Sp. Atk", "Sp. Def", "Speed"]
                 row = df[df["Name"] == name].iloc[0]
+
                 if stats_dict:  # use filtered/modified stats
-                    stats = stats_dict
+                    stats = stats_dict.copy()
                 else:
                     stats = {stat: int(row[stat]) for stat in stats_cols}
+
                 stats["Name"] = name
+                stats["Type"] = [t.lower() for t in row["Type"]]  # ensure lowercase list
                 return stats
 
             # Battle system
