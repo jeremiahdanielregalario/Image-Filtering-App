@@ -717,8 +717,6 @@ def main():
 
             #Header
             col1, col2, col3 = st.columns([0.4, 1, 0.4])
-            with col2:
-                st.image(fr"images/logo.png", width=500)
             
 
             #Choose your pokemon
