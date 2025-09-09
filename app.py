@@ -20,7 +20,7 @@ CARD_BG = "rgba(255,255,255,0.03)"
 TEXT = "#EDEFF6"
 BG_GRADIENT = "linear-gradient(135deg, #0f172a 0%, #0b2545 40%, #08121f 100%)"
 
-st.set_page_config(page_title="ImageFilter — Live & Upload", layout="wide", page_icon="🎨")
+st.set_page_config(page_title="ImageFilter — Live & Upload", layout="wide", page_icon="images/pokeball.png")
 
 with open("images/logo.png", "rb") as f:
     data = f.read()
