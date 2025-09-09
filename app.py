@@ -178,11 +178,11 @@ def inject_css():
 def hero_section():
     st.markdown(
         f"""
-        <div class='hero'>
-            <div style='display:flex; align-items:center; gap:14px;'>
+        <div class="hero">
+            <div style="display:flex; align-items:center; gap:14px; text-align: center;">
                 <div style='flex:1'>
-                    <img src="data:image/png;base64,{encoded}" width="300">
-                    <p style='margin:0.25rem 0 8px 0; color:#bcd3ff; font-size:15px;'>Apply fun filters to your Pokémons and experience a full Pokémon playground preserved.</p>
+                    <img src="data:image/png;base64,{encoded}" width="600">
+                    <p style="margin:0.25rem 0 8px 0; color:#bcd3ff; font-size:15px;">Apply fun filters to your Pokémons and experience a full Pokémon playground preserved.</p>
                 </div>
             </div>
         </div>
