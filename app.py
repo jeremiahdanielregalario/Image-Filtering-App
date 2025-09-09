@@ -182,7 +182,7 @@ def hero_section():
             <div style="display:flex; align-items:center; gap:14px; text-align: center;">
                 <div style='flex:1'>
                     <img src="data:image/png;base64,{encoded}" width="600">
-                    <p style="margin:0.25rem 0 8px 0; color:#bcd3ff; font-size:15px;">Apply fun filters to your Pokémons and experience a full Pokémon playground preserved.</p>
+                    <p style="margin:0.25rem 0 8px 0; color:#bcd3ff; font-size:15px;">Apply fun filters to your Pokémons and experience a full Pokémon battle playground.</p>
                 </div>
             </div>
         </div>
