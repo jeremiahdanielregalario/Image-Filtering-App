@@ -538,33 +538,38 @@ def main():
             res_choice = "High (1280×720)"
             perf_mode = False
             async_transform_ui = True
+            
+            
+        
 
-        st.subheader("Filter Roulette")
-        # manual roulette controls
-        roulette_manual = st.checkbox("Enable manual Filter Roulette (checkbox)")
-        roulette_next = st.button("Next random filter (manual)")
+        if st.session_state['input_mode'] != 'Pokemon':
+            st.subheader("Filter Roulette")
+            # manual roulette controls
+            roulette_manual = st.checkbox("Enable manual Filter Roulette (checkbox)")
+            roulette_next = st.button("Next random filter (manual)")
 
-        # automatic roulette control
-        auto_roulette = st.checkbox("Enable auto filter roulette (every n seconds)")
-        roulette_interval = st.number_input("Interval (seconds)", min_value=1, max_value=3600, value=5, step=1)
+            if st.session_state['input_mode'] == 'Live':
+                # automatic roulette control
+                auto_roulette = st.checkbox("Enable auto filter roulette (every n seconds)")
+                roulette_interval = st.number_input("Interval (seconds)", min_value=1, max_value=3600, value=5, step=1)
 
-        if roulette_manual and roulette_next:
-            choices = [
-                "Grayscale", 
-                "Sepia", 
-                "Pencil Sketch", 
-                "Cartoonify", 
-                "Canny Edges", 
-                "Gaussian Blur", 
-                "Negative", 
-                "Posterize", 
-                "Emboss"
-            ]
-            selected_filter = random.choice(choices)
-            st.info(f"Roulette picked: {selected_filter}")
+            if roulette_manual and roulette_next:
+                choices = [
+                    "Grayscale", 
+                    "Sepia", 
+                    "Pencil Sketch", 
+                    "Cartoonify", 
+                    "Canny Edges", 
+                    "Gaussian Blur", 
+                    "Negative", 
+                    "Posterize", 
+                    "Emboss"
+                ]
+                selected_filter = random.choice(choices)
+                st.info(f"Roulette picked: {selected_filter}")
 
-        st.markdown("---")
-        st.write("Tip: Type exact values into the small boxes to the right of sliders for precise control.")
+            st.markdown("---")
+            st.write("Tip: Type exact values into the small boxes to the right of sliders for precise control.")
 
     # Resolution choice
     if res_choice.startswith("Low"):
