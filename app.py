@@ -537,10 +537,8 @@ def main():
             #Header
             col1, col2, col3 = st.columns([0.4, 1, 0.4])
             with col2:
-                st.title("Pokémon Filtered")
-            with col3:
-                #pokeball icon
-                st.image(fr"images/pokeball.png", width=80)
+                st.image(fr"images/logo.png", width=500)
+            
 
             #Choose your pokemon
             pokemon = st.sidebar.selectbox("Choose your Pokemon", pokemons)
@@ -574,7 +572,7 @@ def main():
             elif selected_filter == "Emboss":
                 processed = apply_emboss(processed)
 
-            col1, col2, col3 = st.columns([0.4, 1, 0.4])
+            col1, col2, col3 = st.columns([0.8, 1, 0.8])
 
             with col2:
                 st.image(cv2.cvtColor(processed, cv2.COLOR_BGR2RGB), width=300)
@@ -594,12 +592,12 @@ def main():
                 # --- Base stats dictionary
                 base_stats = {stat: int(pokemon_row[stat]) for stat in stats_cols}
 
-                # --- Apply deterministic rotation FIRST
+                # --- Apply random shuffling of stats first via rotation
                 if rotate != 0:
-                    k = rotate % len(stats_cols)
-                    rotated_values = [base_stats[stat] for stat in stats_cols]
-                    rotated_values = rotated_values[-k:] + rotated_values[:-k]  # shift right by k
-                    s = {stat: rotated_values[i] for i, stat in enumerate(stats_cols)}
+                    shuffled_stats = list(base_stats.values())
+                    rng = random.Random(rotate)  # seed with rotate value
+                    rng.shuffle(shuffled_stats)
+                    s = {stat: shuffled_stats[i] for i, stat in enumerate(stats_cols)}
                 else:
                     s = base_stats.copy()
 
@@ -701,9 +699,9 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
             
             # Battle
-            col1, col2, col3 = st.columns([1, 1,1])
+            col1, col2, col3 = st.columns([0.4, 1,0.4])
             with col2:
-                st.header("⚔️ Pokémon Battle")
+                st.image(fr"images/battle_logo.png", width=500)
 
             # Type effectiveness chart
             type_chart = {
@@ -732,7 +730,7 @@ def main():
                 target_type = target_type.lower()
 
                 if target_type in type_chart[move_type]["strong"]:
-                    return 1.5
+                    return 2.0
                 elif target_type in type_chart[move_type]["weak"]:
                     return 0.5
                 else:
