@@ -13,6 +13,177 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
 # Helpers
 
+PRIMARY = "#6C63FF"         # purple
+ACCENT = "#00C2FF"          # cyan
+CARD_BG = "rgba(255,255,255,0.03)"
+TEXT = "#EDEFF6"
+BG_GRADIENT = "linear-gradient(135deg, #0f172a 0%, #0b2545 40%, #08121f 100%)"
+
+st.set_page_config(page_title="ImageFilter — Live & Upload", layout="wide", page_icon="🎨")
+
+def inject_css():
+    css = f"""
+    <style>
+    /* page background */
+    .stApp {{
+        background: {BG_GRADIENT};
+        color: {TEXT};
+    }}
+
+    /* hero card */
+    .hero {{
+        border-radius: 16px;
+        padding: 22px;
+        background: linear-gradient(90deg, rgba(108,99,255,0.06), rgba(0,194,255,0.02));
+        box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+        margin-bottom: 12px;
+    }}
+
+    .cta-btn {{
+        display:inline-block;
+        background: linear-gradient(90deg, {PRIMARY}, {ACCENT});
+        color: white !important;
+        padding: 10px 16px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 600;
+    }}
+
+    .controls-card {{
+        background: {CARD_BG};
+        border-radius: 12px;
+        padding: 12px;
+    }}
+
+    .muted {{ color: #9aa6bf; font-size: 13px; }}
+    button {{ border-radius: 10px; padding: 8px 12px; }}
+
+    /* ---------- webrtc/video-specific styling ---------- */
+    /* Make video & canvas elements follow the app design and fill their column */
+    .stApp video,
+    .stApp canvas,
+    .stApp .stVideo > div > video,
+    .stApp .stVideo > div > canvas,
+    .stApp .streamlit-webrtc > div > video,
+    .stApp .streamlit-webrtc > div > canvas {{
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      max-height: 520px !important;
+      object-fit: cover !important;
+      border-radius: 12px !important;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      display: block !important;
+    }}
+
+    /* Tidy up the video container */
+    .stApp .streamlit-webrtc,
+    .stApp .stVideo {{
+      background: transparent !important;
+      padding: 8px 0 0 0 !important;
+    }}
+
+    /* Hide any placeholder elements that use 'placeholder' in the class name (aggressive) */
+    .stApp div[class*="placeholder"],
+    .stApp div[class*="placeholder"] * {{
+      display: none !important;
+      visibility: hidden !important;
+    }}
+
+    /* If the webrtc container does NOT have a <video> element yet, show a custom polished placeholder.
+       Uses :not(:has(video)) so it only appears when no video is present (modern browsers). */
+    .stApp .streamlit-webrtc > div:not(:has(video)) {{
+      min-height: 320px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #bcd3ff;
+      font-size: 18px;
+      position: relative;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+    }}
+
+    /* Nice centered icon/text for the custom placeholder */
+    .stApp .streamlit-webrtc > div:not(:has(video))::before {{
+      content: "Camera not started — click START";
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      display: block;
+    }}
+    .stApp .streamlit-webrtc > div:not(:has(video))::after {{
+      content: "";
+      width: 64px;
+      height: 42px;
+      border-radius: 6px;
+      border: 6px solid rgba(255,255,255,0.9);
+      position: absolute;
+      top: 36%;
+      transform: translateY(-50%);
+      box-sizing: border-box;
+      opacity: 0.95;
+    }}
+
+    /* Style for the control bar that appears below the video (device selector / start) */
+    .stApp .webrtc-control-panel,
+    .stApp .webrtc-controls,
+    .stApp .streamlit-webrtc .control-panel {{
+      background: rgba(0,0,0,0.28) !important;
+      border-radius: 0 0 12px 12px !important;
+      padding: 8px 12px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      color: #fff !important;
+    }}
+
+    .stApp .webrtc-control-panel button,
+    .stApp .webrtc-controls button,
+    .stApp .streamlit-webrtc button {{
+      border-radius: 10px !important;
+      padding: 8px 12px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase;
+    }}
+
+    /* Make device select float right and appear clean */
+    .stApp select {{
+      background: rgba(255,255,255,0.02) !important;
+      color: white !important;
+      border-radius: 8px !important;
+      padding: 6px 10px !important;
+    }}
+
+    @media (max-width: 800px) {{
+      .stApp video,
+      .stApp canvas {{
+        max-height: 320px !important;
+      }}
+      .stApp .streamlit-webrtc > div:not(:has(video))::before {{
+        font-size: 15px;
+      }}
+    }}
+    </style>
+    """
+    st.markdown(css, unsafe_allow_html=True)
+    
+def hero_section():
+    st.markdown(
+        f"""
+        <div class='hero'>
+            <div style='display:flex; align-items:center; gap:14px;'>
+                <div style='flex:1'>
+                    <img src="images/logo.png" />
+                    <p style='margin:0.25rem 0 8px 0; color:#bcd3ff; font-size:15px;'>Apply fun filters to webcam or images — snapshots, live preview, and full Pokémon playground preserved.</p>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def to_bytes_from_bgr(img_bgr):
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     pil_img = Image.fromarray(img_rgb)
@@ -257,6 +428,10 @@ def main():
             st.session_state['input_mode'] = 'Upload'
         if b3:
             st.session_state['input_mode'] = 'Pokemon'
+            
+    if st.session_state['input_mode'] == 'Pokemon':
+        inject_css()    
+        hero_section()
 
 
     # Two cols: left (video/upload preview), right (controls)
