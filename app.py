@@ -10,6 +10,7 @@ import io
 import random
 import time
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import base64
 
 # Helpers
 
@@ -20,6 +21,11 @@ TEXT = "#EDEFF6"
 BG_GRADIENT = "linear-gradient(135deg, #0f172a 0%, #0b2545 40%, #08121f 100%)"
 
 st.set_page_config(page_title="ImageFilter — Live & Upload", layout="wide", page_icon="🎨")
+
+with open("images/logo.png", "rb") as f:
+    data = f.read()
+    encoded = base64.b64encode(data).decode()
+    
 
 def inject_css():
     css = f"""
@@ -175,8 +181,8 @@ def hero_section():
         <div class='hero'>
             <div style='display:flex; align-items:center; gap:14px;'>
                 <div style='flex:1'>
-                    <img src="images/logo.png" />
-                    <p style='margin:0.25rem 0 8px 0; color:#bcd3ff; font-size:15px;'>Apply fun filters to webcam or images — snapshots, live preview, and full Pokémon playground preserved.</p>
+                    <img src="data:image/png;base64,{encoded}" width="300">
+                    <p style='margin:0.25rem 0 8px 0; color:#bcd3ff; font-size:15px;'>Apply fun filters to your Pokémons and experience a full Pokémon playground preserved.</p>
                 </div>
             </div>
         </div>
