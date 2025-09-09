@@ -1025,9 +1025,22 @@ def main():
 
                 # Player turn (full round happens here)
                 st.write("Your turn! Choose a move:")
+                
+                st.markdown("""
+                    <style>
+                    div.stButton > button {
+                        width: 170px;   /* fixed width */
+                        height: 40px;   /* fixed height */
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+                cols = st.columns([1]*4)
                 moves = list(pokemon_moves[my_pokemon["Name"]].keys())
-                for move in moves:
-                    if st.button(move):
+                for col, move in zip(cols, moves):
+                    if col.button(move):
                         # Determine turn order using Speed
                         if my_pokemon["Speed"] > opponent["Speed"]:
                             first, second = "player", "opponent"
