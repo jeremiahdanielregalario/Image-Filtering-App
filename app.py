@@ -1,5 +1,3 @@
-# streamlit app for imagefilter
-
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -662,19 +660,6 @@ def main():
 
             if uploaded is not None:
                 img_cv = pil_to_cv2(Image.open(uploaded))
-
-                # auto roulette is enabled in Upload mode
-                if auto_roulette:
-                    now = time.time()
-                    last = float(st.session_state.get('upload_roulette_last', 0.0))
-                    if now - last >= float(roulette_interval):
-                        st.session_state['upload_roulette_filter'] = random.choice(choices)
-                        st.session_state['upload_roulette_last'] = now
-                        # trigger rerun 
-                        st.rerun()
-
-                    if st.session_state.get('upload_roulette_filter') is not None:
-                        selected_filter = st.session_state['upload_roulette_filter']
                         
 
                 # apply transforms/filters
